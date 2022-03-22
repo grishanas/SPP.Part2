@@ -1,0 +1,17 @@
+body {
+    display :flex;
+    flex-direction: column;
+    background-color: #FF9500;
+}
+
+.SendNewTask{
+    margin-top: 10px;
+    margin-bottom:20px;
+    align-self: center;
+    
+}
+
+h1 {
+    font-size: 10px;
+
+}

@@ -1,0 +1,160 @@
+A relation is a set of entity occurrences that have the same attributes, together with these attributes.
+
+A relation arity is a number of relation fields (columns).
+
+A relation power is a number of relation rows (tuples).
+
+A relation head is a list of relation fields with their names and other properties.
+
+A relation body is a set of relation rows (tuples) with data.
+
+Attribute domains are a lower hierarchy level, narrowing data types.
+
+A data type is a defined set of data objects of a specified data structure and a set of permissible operations.
+
+An attribute domain is a set of all possible attribute values.
+
+A relation attribute is a named property of an entity.
+
+A relation tuple is a part of a relation that uniquely describes an entity occurrence and its attributes.
+
+A derived relvar (view) is “a named SQL-query”, i.e. another way of accessing a data stored in a relation.
+
+A Relation (relvar value) is a data that is stored inside a table (which was created using DBMS capabilities).
+
+A Relation variable (relvar) is a real database table (that was created using DBMS capabilities).
+
+A relation schema is a description of relation attributes (names, data types, and other properties).
+
+Which terms are synonyms to “entity” = relation, table
+
+Which terms are synonyms to “instance” = row, tuple
+
+Which terms are synonyms to “property” = attribute, field
+
+While naming of any database object it is recommended to use English for best software compatibility and international communication.
+
+While choosing data types for relation attributes it is recommended to choose data accordingly to subject matter.
+
+Is it a good idea to add some information about indexes, encodings and so on to relation description?
+Yes, this will improve the database quality.
+
+A relation key is an identifier that is part of a set of data elements.
+
+A relation superkey is a superset of a candidate key that has the uniqueness property but not necessarily the irreducibility property.
+
+A relation candidate key is a set of attributes that has both of the following properties: uniqueness and irreducibility.
+
+A relation primary key is a set of attributes that has both of the following properties: uniqueness and irreducibility, and identifies one record.
+
+A relation alternate key is a set of attributes that has both of the following properties: uniqueness and irreducibility, and is NOT a primary key.
+
+A simple key is a key that consists of one attribute.
+
+A compound key is a key that consists of two or more attributes.
+
+A natural key is a set of attributes that has both of the following properties: uniqueness and irreducibility, and is originated from the subject matter.
+
+A surrogate key is a set of attributes that has both of the following properties: uniqueness and irreducibility, and is NOT originated from the subject matter.
+
+The natural key pros are:
+Its values may be meaningful and useful (if no security issues exist).
+It may serve as a good primary index in many cases.
+
+The surrogate key pros are:
+It (almost) never produces cascade operations.
+Unlike the natural key, the surrogate one is usually smaller.
+
+The natural key cons are:
+It may produce some insert or update anomalies.
+Unlike the surrogate key, the natural one is usually larger.
+
+The surrogate key cons are:
+We have to add it to the table (and lose some memory).
+Its values are never meaningful or useful.
+
+An intelligent key is a single-attribute key whose values, in addition to their main purpose of serving as unique identifiers (typically for certain real world “entities”), carry some kind of encoded information embedded within themselves.
+
+A foreign key is an attribute or a group of attributes that corresponds to a primary key in another relation.
+
+A recursive foreign key is a foreign key that references some key of relation itself.
+
+A relationship is an association among entities.
+
+In a “one to many” relationship One record from a parent table has several corresponding records from a child table.
+
+Relationship cardinality is the number of elements on both “sides” of a relationship.
+
+In “one to many” relationship the so-called “relationship property” is stored in the child relation
+
+In “many to many” relationship the so-called “relationship property” is stored in the association relation
+
+In “one to one” relationship the so-called “relationship property” is stored in either parent relation, or child relation.
+
+With identifying relationship a record in a child relation has to reference a record in a parent relation.
+
+With non-identifying relationship a record in a child relation may exist without referencing a record in a parent relation.
+
+Referential Integrity is the rule that no referencing tuple is allowed to exist if the corresponding referenced tuple doesn’t also exist.
+
+The following cascade operations exist: ON DELETE SET NULL, ON DELETE NO ACTION
+
+How can we make a DBMS to perform a non-supported cascade operation? Using triggers.
+
+What is true about cascade operations?
+Cascade operations are activated by modifying parent table only.
+Data insertion and selection never activate any cascade operations.
+Cascade operations are activated if only primary key is affected.
+
+Data consistency is a database property stating that a database should conform to all declared integrity constraints.
+
+An index is a specific kind of physical access path (an implementation construct, intended to improve the speed of access to data as physically stored).
+
+Index pros include:
+Indexes are rather small.
+Indexes may dramatically increase search speed.
+
+Index cons include:
+Index update process may take significant time.
+Indexes are to be updated after data modification.
+
+It is a good idea to create an index, if:
+Read operations on a table are performed much more often than modification.
+Index is used for field values uniqueness purpose.
+
+Imagine, we have the following two indexes on a table fields: “field_1”, “field_1, field_2”. Is “field_1” index necessary?
+No, the DBMS may use “field_1, field_2” index to speed up the search on “field_1“.
+
+A unique index is an index that prevents a table from duplicate values in indexed fields.
+
+The difference between clustered and non-clustered index is that clustered index has the same records order as the table this index is built on, but non-clustered may have other records order.
+
+A sparse index has entries for only some of the search values
+
+A covering index contains all information required to resolve the query.
+
+An index with included columns is a non-clustered index that includes non-key columns to cover more queries
+
+A filtered index is especially suited to cover queries that select from a well-defined subset of data.
+
+A full-text index is created on text-based columns to help speed up queries on data contained within those columns.
+
+A domain index is an application-specific index that is used for indexing data in application-specific domains.
+
+Table structure may be stored:
+Inside single file (for all tables) or in separate files (per table).
+In RAM (for temporary tables).
+
+Table data may be stored:
+Inside single file (for all tables) or in separate files (per table).
+In RAM (for temporary tables).
+
+From the storage point of view an index may be a:
+Copy of table data.
+Table organisation approach.
+
+The difference between a view and a materialized view is that:
+Views are nothing more than named queries, while materialized views contain resulting data, so they require physical storage.
+Materialized views have more limitations than views.
+
+Many DBMSes store user defined functions as SQL-code because it’s more efficient for query optimization.

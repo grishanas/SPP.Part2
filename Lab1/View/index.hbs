@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Лаба СПП 1</title>
+    <link rel="stylesheet" href="/View/Style.css">
+    <meta charset="utf-8"/>
+    <style>
+
+    </style>
+  </head>
+  <body>
+    
+    <form method="POST" enctype="multipart/form-data" class="SendNewTask">
+    <input name="TaskName" placeholder="введите название задачи" type="text">
+    <div>
+      <input id="Choice1" name="Status" type="radio" value="1">
+      <label for="Choice1">Выполнена</label>
+      <input id="Choice2" name="Status" type="radio" value="2">
+      <label for="Choice2">Отменено</label>
+      <input id="Choice3" name="Status" type="radio" value="3">
+      <label for="Choice3">Выполняется</label>
+    </div>
+    <input name="DateTime" type="datetime-local">
+    <input name="file" type="file">
+    <input type="submit" value="Отправить">
+    </form>
+    
+    <table border="1">
+    <caption>Список задач</caption>
+    <tr>
+    <th>Номер<br>
+      <form method="get">
+        <input type="hidden" name="Column" value="id">
+        <input type="hidden" name="Course" value='UP' >
+        <input type="submit" class="IDSort" value="&#8593">
+      </form>
+      <form method="get">
+      <input type="hidden" name="Column" value="id">
+      <input type="hidden" name="Course" value='Down' >
+      <input type="submit" class="IDSort" value="&#8595">
+      </form>
+    </th>
+    <th>Описание</th>
+    <th>Статус<br>     
+     <form method="get">
+        <input type="hidden" name="Column" value="Status">
+        <input type="hidden" name="Course" value='UP' >
+        <input type="submit" class="IDSort" value="&#8593">
+      </form>
+      <form method="get">
+      <input type="hidden" name="Column" value="Status">
+      <input type="hidden" name="Course" value='Down' >
+      <input type="submit" class="IDSort" value="&#8595">
+      </form></th>
+    <th>Время</th>
+    <th>Ссылка на скачивание файла</th>
+    </tr>
+    {{#each tabel}}
+    <tr><td>{{this.[id]}}</td><td>{{this.[body].[TaskName]}}</td><td>{{GetStatus this}}</td><td>{{this.[body].[DateTime]}}</td><td>{{GetUrl this}}</td></tr>
+    {{/each}}
+    </table>
+  </body>
+</html>

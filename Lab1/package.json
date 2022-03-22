@@ -1,0 +1,19 @@
+{
+  "dependencies": {
+    "fastify": "^3.27.2",
+    "fastify-formbody": "^5.2.0",
+    "fastify-multipart": "^5.3.1",
+    "handlebars": "^4.7.7",
+    "point-of-view": "^5.1.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "name": "lab1",
+  "version": "1.0.0",
+  "main": "server.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": ""
+}
