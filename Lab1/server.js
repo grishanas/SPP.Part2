@@ -127,12 +127,6 @@ const routers =[{
     url:'/',
     handler: IndexGet,
   },
-  {
-    method:'DELETE',
-    url:'/',
-    handler:DeleteData,
-
-  }
 ]
 
 
@@ -149,13 +143,12 @@ fastify.get('/Data/*',async (request,reply)=>{
 
 routers.forEach((route,index)=>{
   fastify.route(route);
-
 })
 
 
 const start = async () => {
   try {
-    await fastify.listen(3000)
+    await fastify.listen(3001)
   } catch (err) {
     fastify.log.error(err)
     process.exit(1)

@@ -5,7 +5,6 @@ const DataPath = 'Data/data.json';
 
 const util = require('util')
 const { pipeline } = require('stream');
-const { brotliDecompress } = require('zlib');
 const pump = util.promisify(pipeline)
 
 const fastify = require('fastify')({ logger: true })
