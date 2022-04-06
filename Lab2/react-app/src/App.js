@@ -28,7 +28,9 @@ function App() {
       let formData= new FormData();
       formData.append('TaskName',TaskName?.target?.value ?? null);
       formData.append('Status',Status?.target?.value ?? '');
-      formData.append('DateTime',DateTime?.target?.value ?? '');
+      console.log(DateTime.toString());
+      formData.append('DateTime',DateTime?.toString() ?? '');
+      formData.append('file',file?.target?.files[0]??null)
     
       Requst.post('/',formData).then(e=>{console.log(e)});
 
@@ -47,7 +49,7 @@ function App() {
           method=Status?.target?.value;
           break;
         case 'DateTime':
-          method=DateTime?.target?.value;
+          method=DateTime?.toString()??'';
           break;
         case 'file':
           method=file?.target?.files[0]??null;
@@ -92,7 +94,7 @@ function App() {
   const [MethodType, setMethodType] = React.useState('');
   const [TaskName,ChangeName] = React.useState('');
   const [Status,ChangeStatus] = React.useState('');
-  const [DateTime,ChangeDate] = React.useState('');
+  const [DateTime,ChangeDate] = React.useState(Date);
   const [file,setfile]= React.useState();
   const n=0;
   const [rows,setRows]=React.useState('');
@@ -110,7 +112,7 @@ function App() {
       id:elem.id,
       TaskName:elem.body.TaskName,
       Status:elem.body.Status,
-      DateTime:elem.body.DateTime,
+      DateTime:(new Date(Date.parse(elem.body.DateTime))).toLocaleDateString(),
       file:elem.body.file,
       }
       
@@ -200,12 +202,30 @@ const [ChooseField,setChooseField] = React.useState('');
           </div>
           :null}
           {(MethodType==='POST')?
+          <div>
           <TextField
             label='Name'
             id='TaskName'
             onChange={ChangeName}
           >
           </TextField>
+          <TextField
+            label='Status'
+            id='Status'
+            onChange={ChangeStatus}
+          >
+          </TextField>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+          <DesktopDatePicker
+               label="Date desktop"
+               inputFormat="MM/dd/yyyy"
+               value={DateTime}
+               onChange={ChangeDate}
+               renderInput={(params) => <TextField {...params} />}
+           />
+           </LocalizationProvider>
+           <input type='file' onChange={setfile}></input>:
+          </div>
           :null}
 
        </FormControl>

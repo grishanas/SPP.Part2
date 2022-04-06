@@ -31,7 +31,7 @@ class BadRequest implements IRequestError
         this.message=message;
     }
 
-    public CreateReply(reply:FastifyReply)
+    public CreateReply(reply:FastifyReply):FastifyReply
     {
         reply.statusCode=400;
         return reply; 
@@ -114,7 +114,10 @@ async function PostAddItem(request:any,reply:FastifyReply)
 {   
     try
     {
-        let Task = new ReqBody(<IReqBody>request.body,request.file.path);
+        let tmp= await request.body;
+        let file= await request.file;
+        console.log(tmp,file);
+        let Task = new ReqBody(<IReqBody>tmp,file.path);
         let data = ItemApi.ReadFile(path.join(DataLocation,'Data.json'));
         let json = JSON.parse(data);
         let id=1;
@@ -134,7 +137,7 @@ async function PostAddItem(request:any,reply:FastifyReply)
         let error:IRequestError = err as IRequestError;
         if(error)
         {
-            reply = error.CreateReply(reply);
+            reply.code(400);
         }
 
         reply.send();

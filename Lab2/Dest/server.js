@@ -88,7 +88,10 @@ server.addHook('onSend', (request, reply, payload, done) => {
 });
 async function PostAddItem(request, reply) {
     try {
-        let Task = new ReqBody(request.body, request.file.path);
+        let tmp = await request.body;
+        let file = await request.file;
+        console.log(tmp, file);
+        let Task = new ReqBody(tmp, file.path);
         let data = ItemApi.ReadFile(path_1.default.join(DataLocation, 'Data.json'));
         let json = JSON.parse(data);
         let id = 1;
@@ -103,7 +106,7 @@ async function PostAddItem(request, reply) {
     catch (err) {
         let error = err;
         if (error) {
-            reply = error.CreateReply(reply);
+            reply.code(400);
         }
         reply.send();
     }
