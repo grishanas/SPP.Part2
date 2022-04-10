@@ -31,10 +31,13 @@ const fastify_multer_1 = __importDefault(require("fastify-multer"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const ItemApi = __importStar(require("./ItemApi"));
+const fastify_jwt_1 = __importDefault(require("fastify-jwt"));
+const lodash_1 = __importDefault(require("lodash"));
 const DataLocation = path_1.default.join(__dirname, 'Data');
 console.log(DataLocation);
 const server = (0, fastify_1.default)();
 server.register(fastify_multer_1.default.contentParser);
+server.register((fastify_jwt_1.default), { secret: 'secret' });
 let upload = (0, fastify_multer_1.default)();
 class BadRequest {
     constructor(name, message) {
@@ -213,6 +216,9 @@ const put = fastify_multer_1.default.diskStorage({
 async function Opt(request, reply) {
     reply.code(204).send();
 }
+server.addHook('onRequest', (request, reply) => {
+    console.log('request:', request.raw);
+});
 server.route({
     method: 'POST',
     url: '/',
@@ -239,6 +245,49 @@ server.route({
     method: 'DELETE',
     url: '/',
     handler: Delete,
+});
+server.route({
+    method: 'POST',
+    url: '/Author',
+    handler: async (request, reply) => {
+        let body = await request.body;
+        if (!lodash_1.default.has(body, ['Password', 'Login'])) {
+            reply.code(400).send('Bad request');
+            return;
+        }
+        let Password = body.Password;
+        let Login = body.Login;
+        let json = JSON.parse(ItemApi.ReadFile(path_1.default.join(__dirname, 'Users.json')));
+        let author = false;
+        json.forEach((element) => {
+            if ((element.Login === Login) && (element.Password === Password))
+                author = true;
+        });
+        if (!author) {
+            reply.code(404).send();
+            return;
+        }
+        let jwToken = server.jwt.sign({ 'Password': Password, 'Login': Login });
+        reply.send(jwToken);
+    }
+});
+server.route({
+    method: 'POST',
+    url: '/Registrate',
+    handler: async (request, reply) => {
+        let body = await request.body;
+        if (!lodash_1.default.has(body, ['Password', 'Login'])) {
+            reply.code(400).send('Bad request');
+            return;
+        }
+        let Password = body.Password;
+        let Login = body.Login;
+        let json = JSON.parse(ItemApi.ReadFile(path_1.default.join(__dirname, 'Users.json')));
+        //тут должна быть проверка на существование данного пользователя
+        json.push({ 'Password': Password, 'Login': Login });
+        ItemApi.SaveFile(path_1.default.join(__dirname, 'Users.json'), json);
+        reply.code(200).send();
+    }
 });
 const start = async () => {
     try {

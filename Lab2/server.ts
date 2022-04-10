@@ -6,6 +6,11 @@ import lobash from 'lodash'
 import _ from 'lodash';
 import * as ItemApi from './ItemApi'
 import { nextTick } from 'process';
+import { request } from 'http';
+import fastifyJwt from 'fastify-jwt';
+import _l  from "lodash";
+import cookie from 'fastify-cookie'
+import { User } from './User';
 
 const DataLocation = path.join(__dirname,'Data');
 
@@ -13,6 +18,7 @@ console.log(DataLocation);
 
 const server = fastify();
 server.register(multer.contentParser);
+server.register((fastifyJwt),{secret: 'dsadwqtgrfajYHGNUJIH99521jiohu'});
 let upload = multer();
 
 interface IRequestError extends Error {
@@ -106,7 +112,7 @@ class ReqBody
 server.addHook('onSend', (request, reply, payload, done) => {
     reply.header("Access-Control-Allow-Origin", "*");
     reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE,OPTION")
-    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin");
+    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin,Cache-Control");
     done()
 })
 
@@ -278,7 +284,9 @@ async function Opt(request:any,reply:FastifyReply)
 }
 
 
-
+server.addHook('onRequest',(request:FastifyRequest,reply:FastifyReply)=>{
+    console.log('request:',request.raw);
+})
 
 server.route(
     {
@@ -304,8 +312,6 @@ server.route(
     },
 );
 
-
-
 server.route(
     {
         method:'PUT',
@@ -323,6 +329,95 @@ server.route(
     }
 )
 
+server.route({
+    method:'POST',
+    url:'/Author',
+    handler:async (request:FastifyRequest,reply:FastifyReply)=>{
+
+
+        let body:any= await request.body;
+
+        if(!_l.has(body,['Password','Login'])) 
+        {
+            reply.code(400).send('Bad request');
+            return;
+        }
+        
+        let Password:any = body.Password;
+        let Login:any = body.Login;
+
+        let json = JSON.parse(ItemApi.ReadFile(path.join(__dirname,'Users.json')));
+        let author=false;
+
+        json.forEach((element:{Password:String,Login:String}) => {
+
+            if((element.Login===Login)&&(element.Password===Password))
+                author=true; 
+        });
+        
+        if(!author)
+        {
+            reply.code(404).send();
+            return;
+        }
+
+        let jwToken = server.jwt.sign({'Password':Password,'Login':Login});
+        reply.send(jwToken);
+    }
+    }
+)
+
+server.route({
+    method:'POST',
+    url:'/Registrate',
+    handler:async (request:FastifyRequest,reply:FastifyReply)=>{
+
+        let body:any= await request.body;
+
+        if(!_l.has(body,['Password','Login'])) 
+        {
+            reply.code(400).send('Bad request');
+            return;
+        }
+
+        let Password:any = body.Password;
+        let Login:any = body.Login;
+
+        let user = new User(Password,Login);
+        let json = JSON.parse(ItemApi.ReadFile(path.join(__dirname,'Users.json')));
+
+        if(!user.IsUniqUser(json))
+            {
+                reply.code(401).send()
+                return;
+            }
+        json.push(user);
+        ItemApi.SaveFile(path.join(__dirname,'Users.json'),json);
+        reply.code(200).send();
+    }
+})
+
+
+function VerifyJWT(jwToken:string):boolean
+{
+
+
+    return true;
+}
+
+
+server.addHook('onRequest',async (request:FastifyRequest,reply:FastifyReply,done)=>{
+
+    if((request.url !== '/Registrate')&&(request.url !== '/Author'))
+    {
+      
+    }
+    else
+    {
+
+    }
+    done();
+})
 
 
 const start = async () => {
@@ -335,3 +430,5 @@ const start = async () => {
   }
 
 start();
+
+export{ server};

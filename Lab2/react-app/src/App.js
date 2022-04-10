@@ -141,10 +141,25 @@ const [ID,setID]=React.useState('');
 const [selectionModel, setSelectionModel] = React.useState('');
 const [ChooseField,setChooseField] = React.useState('');
 
+const [Email,SetEmail] = React.useState('');
+const [Password,SetPassword] = React.useState('');
+
+
+async function Registrate()
+{
+
+}
+
+async function Author()
+{
+
+  
+}
+
   return (
     <div className="App">
       <header className="App-header">
-
+      </header>
      <div>
        <FormControl>
           <InputLabel id="Method-Avalible">
@@ -264,8 +279,38 @@ const [ChooseField,setChooseField] = React.useState('');
       
       </div>
       {(MethodType==="DELETE")? <Button onClick={(e)=>{SendRequst(e)}}>Удалить объекты</Button>:null}
+        
+      <div>
+        <TextField
+          id="Email-id"
+          label='Email'
+          type='email'
+          value={Email}
+          onChange={SetEmail}
+        >
 
-      </header>
+        </TextField>
+        <TextField
+          id="Passowrd-id"
+          label="Password"
+          type="password"
+          value={Password}
+          onChange={SetPassword}
+        >
+          
+        </TextField>
+        <Button
+          onClick={Registrate()}
+        >
+          Зарегистрироваться
+        </Button>
+        <Button
+          onClick={Author()}
+        >
+            Войти
+        </Button>
+      </div>
+      
     </div>
   );
 }
