@@ -14,10 +14,12 @@ const baseURL = 'http://localhost:3001'
 
 function App() {
 
-  let Requst = axios.create({
+  axios.defaults.withCredentials = true;
+  const Requst = axios.create({
     baseURL: 'http://localhost:3001',
-    headers:{ 'Content-Type': 'multipart/form-data' }
+    headers:{ 'Content-Type': 'multipart/form-data' },
   })
+
 
   function SendRequst (e){
     
@@ -65,7 +67,7 @@ function App() {
     if(MethodType==="DELETE")
     {
       
-      const req = axios.create({
+      let req = axios.create({
         baseURL: 'http://localhost:3001',
         headers: {"Content-Type": "application/json"},
       });
@@ -102,12 +104,8 @@ function App() {
   React.useEffect(()=>{
     (async()=>{
       let ro=[];
-      let Requst = axios.create({
-        baseURL: 'http://localhost:3001',
-        headers:{ 'Content-Type': 'multipart/form-data' }
-      })
-    const Items = await (Requst.get('/'));
-    ro = Items.data.map((elem)=>(
+      const Items = await (Requst.get('/'));
+      ro = Items.data.map((elem)=>(
       {
       id:elem.id,
       TaskName:elem.body.TaskName,
@@ -147,12 +145,17 @@ const [Password,SetPassword] = React.useState('');
 
 async function Registrate()
 {
+  let dat={"Login":Email?.target?.value??'','Password':Password?.target?.value??''}
+  Requst.post('/Registrate',dat.Login,{headers:{ 'Content-Type': 'application/json' }});
 
 }
 
 async function Author()
 {
-
+  let dat={"Login":Email?.target?.value??'','Password':Password?.target?.value??''};
+  
+  let data = await Requst.post('/Author',dat,{headers:{ 'Content-Type': 'application/json' }});
+  console.log(data);
   
 }
 
@@ -285,7 +288,6 @@ async function Author()
           id="Email-id"
           label='Email'
           type='email'
-          value={Email}
           onChange={SetEmail}
         >
 
@@ -294,18 +296,17 @@ async function Author()
           id="Passowrd-id"
           label="Password"
           type="password"
-          value={Password}
           onChange={SetPassword}
         >
           
         </TextField>
         <Button
-          onClick={Registrate()}
+          onClick={()=>{Registrate()}}
         >
           Зарегистрироваться
         </Button>
         <Button
-          onClick={Author()}
+          onClick={()=>{Author()}}
         >
             Войти
         </Button>

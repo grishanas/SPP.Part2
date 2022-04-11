@@ -8,9 +8,9 @@ import * as ItemApi from './ItemApi'
 import { nextTick } from 'process';
 import { request } from 'http';
 import fastifyJwt from 'fastify-jwt';
-import _l  from "lodash";
-import cookie from 'fastify-cookie'
-import { User } from './User';
+import cookie, { fastifyCookie } from 'fastify-cookie'
+import { User,FindUser,SignIn } from './User';
+
 
 const DataLocation = path.join(__dirname,'Data');
 
@@ -18,7 +18,9 @@ console.log(DataLocation);
 
 const server = fastify();
 server.register(multer.contentParser);
-server.register((fastifyJwt),{secret: 'dsadwqtgrfajYHGNUJIH99521jiohu'});
+server.register(fastifyCookie);
+const key='dsadwqtgrfajYHGNUJIH99521jiohu';
+server.register((fastifyJwt),{secret: key});
 let upload = multer();
 
 interface IRequestError extends Error {
@@ -111,8 +113,9 @@ class ReqBody
 
 server.addHook('onSend', (request, reply, payload, done) => {
     reply.header("Access-Control-Allow-Origin", "*");
-    reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE,OPTION")
-    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin,Cache-Control");
+    reply.header('Access-Control-Allow-Credentials', 'true');
+    reply.header("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin, Cache-Control");
     done()
 })
 
@@ -284,10 +287,6 @@ async function Opt(request:any,reply:FastifyReply)
 }
 
 
-server.addHook('onRequest',(request:FastifyRequest,reply:FastifyReply)=>{
-    console.log('request:',request.raw);
-})
-
 server.route(
     {
         method:'POST',
@@ -301,6 +300,18 @@ server.route(
 server.route({
     method:'OPTIONS',
     url:'/',
+    handler:Opt,
+})
+
+server.route({
+    method:'OPTIONS',
+    url:'/Registrate',
+    handler:Opt,
+})
+
+server.route({
+    method:'OPTIONS',
+    url:'/Author',
     handler:Opt,
 })
 
@@ -335,34 +346,51 @@ server.route({
     handler:async (request:FastifyRequest,reply:FastifyReply)=>{
 
 
+        console.log('Author');
         let body:any= await request.body;
+        console.log(body);
 
-        if(!_l.has(body,['Password','Login'])) 
+
+        if(!(body?.Password&&body?.Login)) 
         {
             reply.code(400).send('Bad request');
             return;
         }
-        
-        let Password:any = body.Password;
-        let Login:any = body.Login;
-
+        let user = new User(body.Password,body.Login);
         let json = JSON.parse(ItemApi.ReadFile(path.join(__dirname,'Users.json')));
-        let author=false;
+        let Users:User[]=json;
 
-        json.forEach((element:{Password:String,Login:String}) => {
+        let index = FindUser(Users,user);
 
-            if((element.Login===Login)&&(element.Password===Password))
-                author=true; 
-        });
-        
-        if(!author)
+        if(index==-1)
         {
             reply.code(404).send();
             return;
         }
 
-        let jwToken = server.jwt.sign({'Password':Password,'Login':Login});
-        reply.send(jwToken);
+        let usr:User=Users[index];
+   
+        try
+        {
+        
+        SignIn(usr);
+        }
+        catch(e)
+        {
+            console.log(e);
+        }
+        try
+        {
+        console.log(usr.JWToken);
+        reply.setCookie("JWToken",usr.JWToken,{maxAge:60*60,httpOnly:true});
+        }
+        catch(e)
+        {
+            console.log(e);
+        }
+
+        reply.code(200).send();
+        ItemApi.SaveFile(path.join(__dirname,'Users.json'),Users);
     }
     }
 )
@@ -372,9 +400,11 @@ server.route({
     url:'/Registrate',
     handler:async (request:FastifyRequest,reply:FastifyReply)=>{
 
+        console.log('reg');
         let body:any= await request.body;
 
-        if(!_l.has(body,['Password','Login'])) 
+        console.log(body);
+        if(!(body?.Password&&body?.Login)) 
         {
             reply.code(400).send('Bad request');
             return;
@@ -387,10 +417,10 @@ server.route({
         let json = JSON.parse(ItemApi.ReadFile(path.join(__dirname,'Users.json')));
 
         if(!user.IsUniqUser(json))
-            {
-                reply.code(401).send()
-                return;
-            }
+        {
+            reply.code(401).send()
+            return;
+        }
         json.push(user);
         ItemApi.SaveFile(path.join(__dirname,'Users.json'),json);
         reply.code(200).send();
@@ -400,23 +430,30 @@ server.route({
 
 function VerifyJWT(jwToken:string):boolean
 {
-
+    let verify=server.jwt.verify(jwToken);
+    console.log(verify);
 
     return true;
 }
 
 
-server.addHook('onRequest',async (request:FastifyRequest,reply:FastifyReply,done)=>{
+server.addHook('onRequest',(request:FastifyRequest,reply:FastifyReply,done)=>{
 
+    console.log('request');
     if((request.url !== '/Registrate')&&(request.url !== '/Author'))
     {
-      
+        if(VerifyJWT(request.cookies.JWToken))
+        {
+            console.log('something');
+        }
+
+    
     }
     else
     {
 
     }
-    done();
+    done()
 })
 
 

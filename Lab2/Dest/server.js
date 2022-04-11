@@ -26,18 +26,23 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.server = void 0;
 const fastify_1 = __importDefault(require("fastify"));
 const fastify_multer_1 = __importDefault(require("fastify-multer"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const ItemApi = __importStar(require("./ItemApi"));
 const fastify_jwt_1 = __importDefault(require("fastify-jwt"));
-const lodash_1 = __importDefault(require("lodash"));
+const fastify_cookie_1 = require("fastify-cookie");
+const User_1 = require("./User");
 const DataLocation = path_1.default.join(__dirname, 'Data');
 console.log(DataLocation);
 const server = (0, fastify_1.default)();
+exports.server = server;
 server.register(fastify_multer_1.default.contentParser);
-server.register((fastify_jwt_1.default), { secret: 'secret' });
+server.register(fastify_cookie_1.fastifyCookie);
+const key = 'dsadwqtgrfajYHGNUJIH99521jiohu';
+server.register((fastify_jwt_1.default), { secret: key });
 let upload = (0, fastify_multer_1.default)();
 class BadRequest {
     constructor(name, message) {
@@ -85,8 +90,9 @@ class ReqBody {
 }
 server.addHook('onSend', (request, reply, payload, done) => {
     reply.header("Access-Control-Allow-Origin", "*");
-    reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE,OPTION");
-    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin");
+    reply.header('Access-Control-Allow-Credentials', 'true');
+    reply.header("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin, Cache-Control");
     done();
 });
 async function PostAddItem(request, reply) {
@@ -216,9 +222,6 @@ const put = fastify_multer_1.default.diskStorage({
 async function Opt(request, reply) {
     reply.code(204).send();
 }
-server.addHook('onRequest', (request, reply) => {
-    console.log('request:', request.raw);
-});
 server.route({
     method: 'POST',
     url: '/',
@@ -228,6 +231,16 @@ server.route({
 server.route({
     method: 'OPTIONS',
     url: '/',
+    handler: Opt,
+});
+server.route({
+    method: 'OPTIONS',
+    url: '/Registrate',
+    handler: Opt,
+});
+server.route({
+    method: 'OPTIONS',
+    url: '/Author',
     handler: Opt,
 });
 server.route({
@@ -250,44 +263,78 @@ server.route({
     method: 'POST',
     url: '/Author',
     handler: async (request, reply) => {
+        console.log('Author');
         let body = await request.body;
-        if (!lodash_1.default.has(body, ['Password', 'Login'])) {
+        console.log(body);
+        if (!(body?.Password && body?.Login)) {
             reply.code(400).send('Bad request');
             return;
         }
-        let Password = body.Password;
-        let Login = body.Login;
+        let user = new User_1.User(body.Password, body.Login);
         let json = JSON.parse(ItemApi.ReadFile(path_1.default.join(__dirname, 'Users.json')));
-        let author = false;
-        json.forEach((element) => {
-            if ((element.Login === Login) && (element.Password === Password))
-                author = true;
-        });
-        if (!author) {
+        let Users = json;
+        let index = (0, User_1.FindUser)(Users, user);
+        if (index == -1) {
             reply.code(404).send();
             return;
         }
-        let jwToken = server.jwt.sign({ 'Password': Password, 'Login': Login });
-        reply.send(jwToken);
+        let usr = Users[index];
+        try {
+            (0, User_1.SignIn)(usr);
+        }
+        catch (e) {
+            console.log(e);
+        }
+        try {
+            console.log(usr.JWToken);
+            reply.setCookie("JWToken", usr.JWToken, { maxAge: 60 * 60, httpOnly: true });
+        }
+        catch (e) {
+            console.log(e);
+        }
+        reply.code(200).send();
+        ItemApi.SaveFile(path_1.default.join(__dirname, 'Users.json'), Users);
     }
 });
 server.route({
     method: 'POST',
     url: '/Registrate',
     handler: async (request, reply) => {
+        console.log('reg');
         let body = await request.body;
-        if (!lodash_1.default.has(body, ['Password', 'Login'])) {
+        console.log(body);
+        if (!(body?.Password && body?.Login)) {
             reply.code(400).send('Bad request');
             return;
         }
         let Password = body.Password;
         let Login = body.Login;
+        let user = new User_1.User(Password, Login);
         let json = JSON.parse(ItemApi.ReadFile(path_1.default.join(__dirname, 'Users.json')));
-        //тут должна быть проверка на существование данного пользователя
-        json.push({ 'Password': Password, 'Login': Login });
+        if (!user.IsUniqUser(json)) {
+            reply.code(401).send();
+            return;
+        }
+        json.push(user);
         ItemApi.SaveFile(path_1.default.join(__dirname, 'Users.json'), json);
         reply.code(200).send();
     }
+});
+function VerifyJWT(jwToken) {
+    let verify = server.jwt.verify(jwToken);
+    console.log(verify);
+    return true;
+}
+server.addHook('onRequest', (request, reply, done) => {
+    console.log('request');
+    if ((request.url !== '/Registrate') && (request.url !== '/Author')) {
+        if (VerifyJWT(request.cookies.JWToken)) {
+            console.log('something');
+        }
+    }
+    else {
+    }
+    done();
 });
 const start = async () => {
     try {
