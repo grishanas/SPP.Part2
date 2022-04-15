@@ -14,6 +14,8 @@ const baseURL = 'http://localhost:3001'
 
 function App() {
 
+  const [reRender,SetRerender]=React.useState();
+
   axios.defaults.withCredentials = true;
   const Requst = axios.create({
     baseURL: 'http://localhost:3001',
@@ -21,7 +23,7 @@ function App() {
   })
 
 
-  function SendRequst (e){
+  async function SendRequst (e){
     
     e.preventDefault();
     if(MethodType==="POST")
@@ -34,7 +36,9 @@ function App() {
       formData.append('DateTime',DateTime?.toString() ?? '');
       formData.append('file',file?.target?.files[0]??null)
     
-      Requst.post('/',formData).then(e=>{console.log(e)});
+      let answ =await Requst.post('/',formData);
+      if(answ.status===200)
+        GetData()
 
     }
     if(MethodType==="PUT")
@@ -62,6 +66,7 @@ function App() {
       console.log(file);
       formData.append(ChooseField,method);
       Requst.put('/',formData);
+      GetData();
       
     }
     if(MethodType==="DELETE")
@@ -74,24 +79,12 @@ function App() {
       console.log("Delete");
       console.log(selectionModel);
       req.delete('/',{ data:{'id':selectionModel}}).then((e)=>{console.log(e)});
-      
-      let ro=rows.slice();
-      selectionModel.forEach((e)=>{
-        ro.forEach((i,index)=>{
-          console.log(e,i.id);
-          if(e===i.id)
-          {
-            ro.splice(index,1)
-          }
-            
-        })
-      })
-      console.log(ro);
-      setRows([...ro])
+      GetData();
       
       
     }
   }
+
 
   const [MethodType, setMethodType] = React.useState('');
   const [TaskName,ChangeName] = React.useState('');
@@ -101,27 +94,26 @@ function App() {
   const n=0;
   const [rows,setRows]=React.useState('');
 
-  React.useEffect(()=>{
-    (async()=>{
-      let ro=[];
-      const Items = await (Requst.get('/'));
-      ro = Items.data.map((elem)=>(
-      {
-      id:elem.id,
-      TaskName:elem.body.TaskName,
-      Status:elem.body.Status,
-      DateTime:(new Date(Date.parse(elem.body.DateTime))).toLocaleDateString(),
-      file:elem.body.file,
-      }
-      
-      
-    ));
+  async function GetData()
+  {
+    let ro=[];
+    const Items = await (Requst.get('/'));
+    ro = Items.data.map((elem)=>(
+    {
+    id:elem.id,
+    TaskName:elem.body.TaskName,
+    Status:elem.body.Status,
+    DateTime:(new Date(Date.parse(elem.body.DateTime))).toLocaleDateString(),
+    file:elem.body.file,
+    }));
     setRows([...ro])
-    ChangeDate(new Date('2022-04-3T21:11:54'));
-    setID(0);
-    })();
-    
-  },[])
+  }
+
+    React.useEffect(()=>{
+    (async()=>{
+    GetData();
+    })();},[]);
+
 
 
   const columns=[
@@ -146,7 +138,7 @@ const [Password,SetPassword] = React.useState('');
 async function Registrate()
 {
   let dat={"Login":Email?.target?.value??'','Password':Password?.target?.value??''}
-  Requst.post('/Registrate',dat.Login,{headers:{ 'Content-Type': 'application/json' }});
+  Requst.post('/Registrate',dat,{headers:{ 'Content-Type': 'application/json' }});
 
 }
 
@@ -158,6 +150,8 @@ async function Author()
   console.log(data);
   
 }
+
+const [pageSize, setPageSize] = React.useState(5);
 
   return (
     <div className="App">
@@ -258,11 +252,12 @@ async function Author()
      </div>
 
 
-     <div style={{height:400}}>
+     <div style={{ height: 400, width: '100%' }}>
      { (MethodType==="DELETE")?  
         <DataGrid
           autoHeight={true}
           rows={rows}
+          pageSize={pageSize}
           columns={columns}
           disableSelectionOnClick
           checkboxSelection
@@ -271,6 +266,7 @@ async function Author()
         /> 
         :
         <DataGrid
+        pageSize={pageSize}
         autoHeight={true}
         rows={rows}
         columns={columns}
@@ -283,7 +279,7 @@ async function Author()
       </div>
       {(MethodType==="DELETE")? <Button onClick={(e)=>{SendRequst(e)}}>Удалить объекты</Button>:null}
         
-      <div>
+      <div sx={{ m: 2 }}>
         <TextField
           id="Email-id"
           label='Email'

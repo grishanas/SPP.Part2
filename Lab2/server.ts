@@ -5,11 +5,10 @@ import path from 'path'
 import lobash from 'lodash'
 import _ from 'lodash';
 import * as ItemApi from './ItemApi'
-import { nextTick } from 'process';
-import { request } from 'http';
 import fastifyJwt from 'fastify-jwt';
 import cookie, { fastifyCookie } from 'fastify-cookie'
 import { User,FindUser,SignIn } from './User';
+import fastifyCors from 'fastify-cors';
 
 
 const DataLocation = path.join(__dirname,'Data');
@@ -17,6 +16,25 @@ const DataLocation = path.join(__dirname,'Data');
 console.log(DataLocation);
 
 const server = fastify();
+
+const method = ['POST', 'PUT', 'DELETE','OPTIONS']
+
+server.register(fastifyCors,{
+    credentials:true,
+    methods:method,
+    origin:(origin,cb)=>{
+        console.log(origin);
+        cb(null,true);
+    }
+    });
+
+
+server.addHook('onSend', (request, reply, payload, done) => {
+    done()
+})
+
+
+
 server.register(multer.contentParser);
 server.register(fastifyCookie);
 const key='dsadwqtgrfajYHGNUJIH99521jiohu';
@@ -46,6 +64,24 @@ class BadRequest implements IRequestError
     }
 
 }
+
+class expiredJWT implements IRequestError
+{
+    name: string;
+    message: string;
+
+    constructor(name:string,message:string)
+    {
+        this.name=name;
+        this.message=message;
+    }
+
+    public CreateReply(reply:FastifyReply):FastifyReply
+    {
+        reply.statusCode=401;
+        return reply; 
+    }
+} 
 
 
 interface IReqBody
@@ -111,13 +147,6 @@ class ReqBody
 }
 
 
-server.addHook('onSend', (request, reply, payload, done) => {
-    reply.header("Access-Control-Allow-Origin", "*");
-    reply.header('Access-Control-Allow-Credentials', 'true');
-    reply.header("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
-    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin, Cache-Control");
-    done()
-})
 
 async function PostAddItem(request:any,reply:FastifyReply)
 {   
@@ -163,6 +192,7 @@ async function GetAllItem(request:FastifyRequest,reply:FastifyReply){
     let Data = fs.createReadStream(path.join(DataLocation,'Data.json'));
     reply.header('Content-Type','application/octet-stream');
     reply.send(Data); 
+    
 }
 
 server.get('/*',async (request:FastifyRequest,reply:FastifyReply)=>{
@@ -281,10 +311,18 @@ const put = multer.diskStorage({
     }
 })
 
-async function Opt(request:any,reply:FastifyReply)
-{
+/*async function Opt(request:FastifyRequest,reply:FastifyReply)
+{   
+
+    let hostname=request.url;
+    console.log(hostname);
+    reply.header('Access-Control-Allow-Origin','127.0.0.1:3000');
+    reply.header('Access-Control-Allow-Credentials', true);
+    reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin, Cache-Control");
+    reply.header('access-control-max-age',7200);
     reply.code(204).send();
-}
+}*/
 
 
 server.route(
@@ -297,23 +335,11 @@ server.route(
     },
 )
 
-server.route({
+/*server.route({
     method:'OPTIONS',
-    url:'/',
+    url:'/*',
     handler:Opt,
-})
-
-server.route({
-    method:'OPTIONS',
-    url:'/Registrate',
-    handler:Opt,
-})
-
-server.route({
-    method:'OPTIONS',
-    url:'/Author',
-    handler:Opt,
-})
+})*/
 
 server.route(
     {
@@ -428,10 +454,21 @@ server.route({
 })
 
 
-function VerifyJWT(jwToken:string):boolean
+function isVerifyJWT(jwToken:string):boolean
 {
+
+    if(jwToken==null)
+        return false;
+    try
+    {
     let verify=server.jwt.verify(jwToken);
-    console.log(verify);
+    console.log("Token:",verify);
+    }
+    catch(e)
+    {
+        console.log("token errore:",e);
+        throw new expiredJWT("jwt Token",'jwt token has expired'); 
+    }
 
     return true;
 }
@@ -439,21 +476,59 @@ function VerifyJWT(jwToken:string):boolean
 
 server.addHook('onRequest',(request:FastifyRequest,reply:FastifyReply,done)=>{
 
-    console.log('request');
-    if((request.url !== '/Registrate')&&(request.url !== '/Author'))
+    let method= request.method;
+    console.log("Request method:",method);
+    try{
+    if (method=='GET')
     {
-        if(VerifyJWT(request.cookies.JWToken))
+        done();
+        return;
+    }
+    if (method.indexOf(method) >=-1)
+    {
+        if((request.url !== '/Registrate')&&(request.url !== '/Author'))
         {
-            console.log('something');
+            console.log()
+            if(request?.cookies?.JWToken??null)
+            {
+                try{
+                if(!isVerifyJWT(request?.cookies?.JWToken))
+                {
+                    reply.code(401).send('incorected jwt token')
+                    return;
+                }
+                }
+                catch(e)
+                {
+                    if(e as expiredJWT)
+                    {
+                        console.log('expiredJWT');
+                        reply.setCookie("JWToken",'');
+                        reply.code(401).send();
+                        return;
+                    }
+
+                }
+
+            }
+            else
+            {
+                console.log('Unauthorized');
+                reply.code(401).send('Unauthorized');
+                return;
+            }
+            
         }
-
-    
+        done();
     }
-    else
+
+    }
+    catch(e)
     {
-
+        console.log(e);
     }
-    done()
+
+
 })
 
 

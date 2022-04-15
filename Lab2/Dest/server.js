@@ -35,10 +35,23 @@ const ItemApi = __importStar(require("./ItemApi"));
 const fastify_jwt_1 = __importDefault(require("fastify-jwt"));
 const fastify_cookie_1 = require("fastify-cookie");
 const User_1 = require("./User");
+const fastify_cors_1 = __importDefault(require("fastify-cors"));
 const DataLocation = path_1.default.join(__dirname, 'Data');
 console.log(DataLocation);
 const server = (0, fastify_1.default)();
 exports.server = server;
+const method = ['POST', 'PUT', 'DELETE', 'OPTIONS'];
+server.register(fastify_cors_1.default, {
+    credentials: true,
+    methods: method,
+    origin: (origin, cb) => {
+        console.log(origin);
+        cb(null, true);
+    }
+});
+server.addHook('onSend', (request, reply, payload, done) => {
+    done();
+});
 server.register(fastify_multer_1.default.contentParser);
 server.register(fastify_cookie_1.fastifyCookie);
 const key = 'dsadwqtgrfajYHGNUJIH99521jiohu';
@@ -51,6 +64,16 @@ class BadRequest {
     }
     CreateReply(reply) {
         reply.statusCode = 400;
+        return reply;
+    }
+}
+class expiredJWT {
+    constructor(name, message) {
+        this.name = name;
+        this.message = message;
+    }
+    CreateReply(reply) {
+        reply.statusCode = 401;
         return reply;
     }
 }
@@ -88,13 +111,6 @@ class ReqBody {
             console.log(' fff');
     }
 }
-server.addHook('onSend', (request, reply, payload, done) => {
-    reply.header("Access-Control-Allow-Origin", "*");
-    reply.header('Access-Control-Allow-Credentials', 'true');
-    reply.header("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
-    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin, Cache-Control");
-    done();
-});
 async function PostAddItem(request, reply) {
     try {
         let tmp = await request.body;
@@ -219,30 +235,29 @@ const put = fastify_multer_1.default.diskStorage({
         callback(null, file.originalname);
     }
 });
-async function Opt(request, reply) {
+/*async function Opt(request:FastifyRequest,reply:FastifyReply)
+{
+
+    let hostname=request.url;
+    console.log(hostname);
+    reply.header('Access-Control-Allow-Origin','127.0.0.1:3000');
+    reply.header('Access-Control-Allow-Credentials', true);
+    reply.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+    reply.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin, Cache-Control");
+    reply.header('access-control-max-age',7200);
     reply.code(204).send();
-}
+}*/
 server.route({
     method: 'POST',
     url: '/',
     handler: PostAddItem,
     preHandler: (0, fastify_multer_1.default)({ storage: post }).single('file')
 });
-server.route({
-    method: 'OPTIONS',
-    url: '/',
-    handler: Opt,
-});
-server.route({
-    method: 'OPTIONS',
-    url: '/Registrate',
-    handler: Opt,
-});
-server.route({
-    method: 'OPTIONS',
-    url: '/Author',
-    handler: Opt,
-});
+/*server.route({
+    method:'OPTIONS',
+    url:'/*',
+    handler:Opt,
+})*/
 server.route({
     method: 'GET',
     url: '/',
@@ -320,21 +335,58 @@ server.route({
         reply.code(200).send();
     }
 });
-function VerifyJWT(jwToken) {
-    let verify = server.jwt.verify(jwToken);
-    console.log(verify);
+function isVerifyJWT(jwToken) {
+    if (jwToken == null)
+        return false;
+    try {
+        let verify = server.jwt.verify(jwToken);
+        console.log("Token:", verify);
+    }
+    catch (e) {
+        console.log("token errore:", e);
+        throw new expiredJWT("jwt Token", 'jwt token has expired');
+    }
     return true;
 }
 server.addHook('onRequest', (request, reply, done) => {
-    console.log('request');
-    if ((request.url !== '/Registrate') && (request.url !== '/Author')) {
-        if (VerifyJWT(request.cookies.JWToken)) {
-            console.log('something');
+    let method = request.method;
+    console.log("Request method:", method);
+    try {
+        if (method == 'GET') {
+            done();
+            return;
+        }
+        if (method.indexOf(method) >= -1) {
+            if ((request.url !== '/Registrate') && (request.url !== '/Author')) {
+                console.log();
+                if (request?.cookies?.JWToken ?? null) {
+                    try {
+                        if (!isVerifyJWT(request?.cookies?.JWToken)) {
+                            reply.code(401).send('incorected jwt token');
+                            return;
+                        }
+                    }
+                    catch (e) {
+                        if (e) {
+                            console.log('expiredJWT');
+                            reply.setCookie("JWToken", '');
+                            reply.code(401).send();
+                            return;
+                        }
+                    }
+                }
+                else {
+                    console.log('Unauthorized');
+                    reply.code(401).send('Unauthorized');
+                    return;
+                }
+            }
+            done();
         }
     }
-    else {
+    catch (e) {
+        console.log(e);
     }
-    done();
 });
 const start = async () => {
     try {
