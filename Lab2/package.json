@@ -1,9 +1,13 @@
 {
   "dependencies": {
+    "@types/crypto-js": "^4.1.1",
+    "@types/cryptojs": "^3.1.30",
     "@types/lodash": "^4.14.180",
     "@types/pump": "^1.1.1",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "crypto-js": "^4.1.1",
+    "cryptojs": "^2.5.3",
     "fastify": "^3.27.4",
     "fastify-cookie": "^5.6.0",
     "fastify-cors": "^6.0.3",

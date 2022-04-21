@@ -1,6 +1,6 @@
 import fastify, { FastifyReply, FastifyRequest } from 'fastify'; 
 import multer from 'fastify-multer';
-import fs, { mkdir, unlink } from 'fs'
+import fs from 'fs'
 import path from 'path'
 import lobash from 'lodash'
 import _ from 'lodash';
@@ -9,6 +9,7 @@ import fastifyJwt from 'fastify-jwt';
 import cookie, { fastifyCookie } from 'fastify-cookie'
 import { User,FindUser,SignIn } from './User';
 import fastifyCors from 'fastify-cors';
+import cryptojs from 'crypto-js'
 
 
 const DataLocation = path.join(__dirname,'Data');
@@ -154,7 +155,6 @@ async function PostAddItem(request:any,reply:FastifyReply)
     {
         let tmp= await request.body;
         let file= await request.file;
-        console.log(tmp,file);
         let Task = new ReqBody(<IReqBody>tmp,file.path);
         let data = ItemApi.ReadFile(path.join(DataLocation,'Data.json'));
         let json = JSON.parse(data);
@@ -255,18 +255,16 @@ async function Delete(request:any,reply:FastifyReply) {
             reply.code(404).send('id not found');
             return;
         }
-        console.log(id);
         let data = ItemApi.ReadFile(path.join(DataLocation,'Data.json'));
         let json = JSON.parse(data);
         let Item:any;
         json.forEach((element: { id: number; },index:number) => {
             id.id.forEach((e:any)=>{
-                console.log(e);
+       
             if(element.id==(e))
             {
                 try{
                 Item=element;
-                console.log(index);
                 json.splice(index,1);
                 }
                 catch(e)
@@ -374,7 +372,7 @@ server.route({
 
         console.log('Author');
         let body:any= await request.body;
-        console.log(body);
+        //console.log(body);
 
 
         if(!(body?.Password&&body?.Login)) 
@@ -407,7 +405,7 @@ server.route({
         }
         try
         {
-        console.log(usr.JWToken);
+        //console.log(usr.JWToken);
         reply.setCookie("JWToken",usr.JWToken,{maxAge:60*60,httpOnly:true});
         }
         catch(e)
@@ -429,7 +427,7 @@ server.route({
         console.log('reg');
         let body:any= await request.body;
 
-        console.log(body);
+       //console.log(body);
         if(!(body?.Password&&body?.Login)) 
         {
             reply.code(400).send('Bad request');
@@ -497,16 +495,36 @@ server.addHook('onRequest',(request:FastifyRequest,reply:FastifyReply,done)=>{
                     reply.code(401).send('incorected jwt token')
                     return;
                 }
+                else
+                {
+
+        
+                    let token:any=server.jwt.verify(request?.cookies?.JWToken);
+                    let Users = JSON.parse(ItemApi.ReadFile('Users.json'));
+                    Users.forEach((e:any)=>{
+                        console.log(e.Password);
+                        console.log(cryptojs.SHA256(e.Password).toString());
+                        if((cryptojs.SHA256(e.Password).toString()===token.Password)&&(cryptojs.SHA256(e.Login).toString()===token.Login))
+                            console.log(true);
+                            else
+                            {
+                            throw new expiredJWT('',"");
+                            }
+                    })
+
+                }
                 }
                 catch(e)
                 {
-                    if(e as expiredJWT)
+                    console.log(e);
+                    if(e instanceof expiredJWT)
                     {
                         console.log('expiredJWT');
                         reply.setCookie("JWToken",'');
                         reply.code(401).send();
                         return;
                     }
+                    
 
                 }
 
@@ -518,6 +536,10 @@ server.addHook('onRequest',(request:FastifyRequest,reply:FastifyReply,done)=>{
                 return;
             }
             
+        }
+        else
+        {
+
         }
         done();
     }

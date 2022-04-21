@@ -2,6 +2,7 @@
 import {server} from './server'
 import crypto from 'crypto'
 import { partial } from 'lodash';
+import cryptojs from 'crypto-js'
 
 interface IUser
 {
@@ -59,15 +60,19 @@ function SignIn(user:User):string
         }
         else
         {
+            console.log('sigin');
             try{
             user.JWTSecret=crypto.randomBytes(16).toString('hex');
             user.refreshTokenSecret = crypto.randomBytes(16).toString('hex');
+            let pas=cryptojs.SHA256(user.Password).toString();
+            let log= cryptojs.SHA256(user.Login).toString();
+            console.log(pas,log);
             user.JWToken = server.jwt.sign(
                 {
-                Password:user.Password,
-                Login:user.Login
+                Password:pas,
+                Login:log,
                 },
-                {expiresIn:"30m"}
+                {expiresIn:"30*60"}
                 );
             }
             catch(e)
@@ -77,7 +82,6 @@ function SignIn(user:User):string
             //надо еще создавать refreshtoken 
         }
 
-        console.log(user);
         return user.JWToken;
 
     }

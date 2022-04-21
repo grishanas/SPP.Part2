@@ -36,6 +36,7 @@ const fastify_jwt_1 = __importDefault(require("fastify-jwt"));
 const fastify_cookie_1 = require("fastify-cookie");
 const User_1 = require("./User");
 const fastify_cors_1 = __importDefault(require("fastify-cors"));
+const crypto_js_1 = __importDefault(require("crypto-js"));
 const DataLocation = path_1.default.join(__dirname, 'Data');
 console.log(DataLocation);
 const server = (0, fastify_1.default)();
@@ -115,7 +116,6 @@ async function PostAddItem(request, reply) {
     try {
         let tmp = await request.body;
         let file = await request.file;
-        console.log(tmp, file);
         let Task = new ReqBody(tmp, file.path);
         let data = ItemApi.ReadFile(path_1.default.join(DataLocation, 'Data.json'));
         let json = JSON.parse(data);
@@ -187,17 +187,14 @@ async function Delete(request, reply) {
             reply.code(404).send('id not found');
             return;
         }
-        console.log(id);
         let data = ItemApi.ReadFile(path_1.default.join(DataLocation, 'Data.json'));
         let json = JSON.parse(data);
         let Item;
         json.forEach((element, index) => {
             id.id.forEach((e) => {
-                console.log(e);
                 if (element.id == (e)) {
                     try {
                         Item = element;
-                        console.log(index);
                         json.splice(index, 1);
                     }
                     catch (e) {
@@ -280,7 +277,7 @@ server.route({
     handler: async (request, reply) => {
         console.log('Author');
         let body = await request.body;
-        console.log(body);
+        //console.log(body);
         if (!(body?.Password && body?.Login)) {
             reply.code(400).send('Bad request');
             return;
@@ -301,7 +298,7 @@ server.route({
             console.log(e);
         }
         try {
-            console.log(usr.JWToken);
+            //console.log(usr.JWToken);
             reply.setCookie("JWToken", usr.JWToken, { maxAge: 60 * 60, httpOnly: true });
         }
         catch (e) {
@@ -317,7 +314,7 @@ server.route({
     handler: async (request, reply) => {
         console.log('reg');
         let body = await request.body;
-        console.log(body);
+        //console.log(body);
         if (!(body?.Password && body?.Login)) {
             reply.code(400).send('Bad request');
             return;
@@ -365,9 +362,23 @@ server.addHook('onRequest', (request, reply, done) => {
                             reply.code(401).send('incorected jwt token');
                             return;
                         }
+                        else {
+                            let token = server.jwt.verify(request?.cookies?.JWToken);
+                            let Users = JSON.parse(ItemApi.ReadFile('Users.json'));
+                            Users.forEach((e) => {
+                                console.log(e.Password);
+                                console.log(crypto_js_1.default.SHA256(e.Password).toString());
+                                if ((crypto_js_1.default.SHA256(e.Password).toString() === token.Password) && (crypto_js_1.default.SHA256(e.Login).toString() === token.Login))
+                                    console.log(true);
+                                else {
+                                    throw new BadRequest('', "");
+                                }
+                            });
+                        }
                     }
                     catch (e) {
-                        if (e) {
+                        console.log(e);
+                        if (e instanceof expiredJWT) {
                             console.log('expiredJWT');
                             reply.setCookie("JWToken", '');
                             reply.code(401).send();
@@ -380,6 +391,8 @@ server.addHook('onRequest', (request, reply, done) => {
                     reply.code(401).send('Unauthorized');
                     return;
                 }
+            }
+            else {
             }
             done();
         }

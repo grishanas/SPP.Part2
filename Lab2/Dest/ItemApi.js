@@ -14,13 +14,11 @@ function ReadFile(Path) {
     catch (e) {
         console.log(e);
     }
-    console.log(data);
     return data;
 }
 exports.ReadFile = ReadFile;
 function SaveFile(Path, Data) {
     try {
-        console.log(JSON.stringify(Data));
         fs_1.default.writeFile(path_1.default.resolve(__dirname, Path), JSON.stringify(Data), (err) => {
             if (err)
                 console.log(err);

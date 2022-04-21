@@ -1,6 +1,5 @@
 import fs from 'fs'
 import path from 'path'
-import * as server from './server'
 
 
 
@@ -15,14 +14,12 @@ export function ReadFile(Path:string):string
     {
         console.log(e);
     }
-    console.log(data);
     return data;
 }
 
 export function SaveFile(Path:string,Data:any)
 {
     try{
-        console.log(JSON.stringify(Data));
         fs.writeFile(path.resolve(__dirname,Path),JSON.stringify(Data),(err)=>{
             if(err)
                 console.log(err);

@@ -1,11 +1,9 @@
-import logo from './logo.svg';
 import './App.css';
 import * as React from 'react';
 import { FormControl, InputLabel, Menu, MenuItem, Table, TableHead, TextField,TableBody, TableCell, Checkbox, Button, Link } from '@mui/material';
 import Select, { SelectChangeEvent } from '@mui/material/Select';
 import axios from 'axios'
 import { DataGrid } from '@mui/x-data-grid';
-import DateAdapter from '@mui/lab/AdapterDateFns';
 import DesktopDatePicker from '@mui/lab/DesktopDatePicker';
 import AdapterDateFns from '@mui/lab/AdapterDateFns';
 import LocalizationProvider from '@mui/lab/LocalizationProvider';
@@ -18,7 +16,7 @@ function App() {
 
   axios.defaults.withCredentials = true;
   const Requst = axios.create({
-    baseURL: 'http://localhost:3001',
+    baseURL: baseURL,
     headers:{ 'Content-Type': 'multipart/form-data' },
   })
 
